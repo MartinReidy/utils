@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+cherry_pick_commits() {
+    local user=$1
+    set -- "${@:2}"
+    local commit_hashes=("$@")
+  #  set -x
+    for hash in "${commit_hashes[@]}"
+    do
+     # echo $commit
+       message=$(git log --format=%B -n 1 "${hash}")
+       git cherry-pick --no-commit --strategy-option theirs "${hash}"
+       git add .
+       # git commit --amend --author "New Author Name <New Author Email>"
+       git commit -m "Assigned to:${user}"$'\n'"Merging: ${hash}"$'\n'"Original: ${message}"
+    done
+cd
+
+}
+
+
+
+get_commit_hashes() {
+   local key=$1
+   local -n commit_hashes=$2
+   # shellcheck disable=SC2034
+   mapfile -t commit_hashes < <(git log \
+                "$(git merge-base remotes/origin/develop \
+                origin/epic/idor-accounting-theme-v2)"..origin/epic/idor-accounting-theme-v2 \
+                  --grep="${key}" --format="%H")
+
+}
+
+
+
+# Take a pipe of file as stdin
+# File / input shoulls have  format
+# git_user  git_email key
+# the destination branch must be checked out
+# There is a alternate method using  git replace that could be used instaead of cherry picking
+cd ~/alaya/api.accounting/
+##IFS=$'\n'
+#while read -r line
+#do
+#  read -r -a line_array<<<"$line"
+#  git_user=${line_array[0]}
+#  git_email_=${line_array[1]}
+#  key=${line_array[2]}
+#
+key=ACL-8
+user="me"
+declare hashes
+#mapfile -t hashes < <(git log "$(git merge-base remotes/origin/develop origin/epic/idor-accounting-theme-v2)"..origin/epic/idor-accounting-theme-v2 --grep="${key}" --format="%H")
+git checkout test1
+get_commit_hashes $key hashes
+cherry_pick_commits "${user}" "${hashes[@]}"
+#done < "${1:-/dev/stdin}"
+
+
+
+
+
+#git rev-list $(git merge-base remotes/origin/develop  origin/epic/idor-accounting-theme-v2)..origin/epic/idor-accounting-theme-v2 --format="%H" --grep="ACL-7"
